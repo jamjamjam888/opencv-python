@@ -13,6 +13,7 @@ import math
 import cv2
 import numpy as np
 from datetime import datetime
+#import pandas as pd
 
 #opencvの情報をプリント
 #print(cv2.getBuildInformation())
@@ -23,8 +24,11 @@ from datetime import datetime
 #fps設定
 fps = 1
 
-#視野設定
-#カメラのpxl:480*640pxl
+#カメラ視野設定
+height = 480
+width = 640
+
+#重心座標を中心とした視野設定
 threshold_pxl = 200
 
 #dynamic range:200*8/3=120mm/s
@@ -104,6 +108,13 @@ cap.set(cv2.CAP_PROP_FPS, fps)
 
 print(int(cap.get(cv2.CAP_PROP_FPS)))
 
+#カメラ視野設定
+#480*640だと動く。画素数が1000*1000
+
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+
+
 #高速化？するためにnumpy配列を使用
 ball_pre = np.array([])
 np_ball_pos = np.array([])
@@ -123,7 +134,13 @@ while (True):
     ret, frame = cap.read()
     
     #frame_num更新
-    frame_num += 1 
+    frame_num += 1
+    
+    #timestamp
+    #現在の日時を取得
+    #now.secondで秒、now.microsecondでミリ秒を取得する
+    now = datetime.now()
+    timestamp = [str(now.minute) + "分" + str(now.second) + "秒" + str(now.microsecond) + "ミリ秒"]
 
     #出力1:差分でどのように物体が検出されるか確認する
     gray1 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -202,9 +219,14 @@ while (True):
     if len(ball_pos) == 0:
         
         #moment_informationにframe番号のみを渡す
-        moment_information.append([None, None, None, frame_num])
+        moment_information.append([None, None, None, frame_num, timestamp])
         #テキストファイルに書き込む
         #移動量を書き込むテキストファイルを生成し日付を書き込む
+        f = open("/home/pi/Desktop/vector_info_log.txt","a")
+        f.write(str(moment_information)+'\n')
+        f.close()
+        
+        #t直前のフレーム保管用ファイル
         f = open("/home/pi/Desktop/vector_info_log.txt","a")
         f.write(str(moment_information)+'\n')
         f.close()
@@ -216,9 +238,14 @@ while (True):
         #検出した物体にそれぞれidを与え、その座標とその時のframe_numを渡してテキストファイルに書き込む
         for iter in range(len(ball_pos)):
             #格納されている重心座標を順番に取り出し、id,x,y,frameを渡す
-            moment_information.append([id, ball_pos[iter], frame_num])
+            moment_information.append([id, ball_pos[iter], frame_num, timestamp])
             #移動量を書き込むテキストファイルを生成し日付を書き込む
             f = open("/home/pi/Desktop/vector_info_log.txt","a")
+            f.write(str(moment_information)+'\n')
+            f.close()
+            
+            #直前のフレーム保管用ファイルを参照して移動量を算出する
+            f = open("/home/pi/Desktop/pre_vector_info_log.txt","a")
             f.write(str(moment_information)+'\n')
             f.close()
             
@@ -230,12 +257,20 @@ while (True):
         
             #重心座標を書き込む
             cv2.circle(frame, tuple(ball_pos[iter]), 1, (0, 0, 255), thickness = 10)
+            
+    #pre_vector_infoに重心座標の情報を書き込む
+    print("check")
+    print(moment_information)
+    f = open("/home/pi/Desktop/pre_vector_info_log.txt","a")
+    f.write(str(moment_information)+'\n')
+    f.close()
     
     cv2.imshow('Moment Frame', frame)
     
     #リストの中身を消去
     ball_pos.clear()
-    
+        
+            
     #キー入力を1ms待って、k がpだったらBreakする
     k = cv2.waitKey(1)&0xff # キー入力を待つ
 
@@ -251,156 +286,3 @@ print("終了")
 
 
 
-
-
-"""
-#######################calcurate diff#######################################
-    #初期loop。ball_preとball_posを比較するため、はじめのフレームは何もしない
-    #また、物体を何も検出しなかった場合もこのloopに入る
-    
-    if len(ball_pre) == 0:
-        ball_pre = np_ball_pos
-        print(1)
-        
-        #取得画像表示
-        cv2.imshow('Moment Frame', frame)
-        
-        #あとで、各フレームを保存するコードを追加する
-        continue
-    
-
-###############################################################################
-"""
-    
-    
-    
-    
-    
-"""
-    #物体の移動量を計算する
-    #直前のフレームにで検出した物体の数が一致した場合のみ処理を行う
-    #検出する物体の数は毎回異なる可能性はどうするか？
-    #今回は撮影対象が水路上をランダムに流れるペットボトルであり、定性的に低速かつ離散的であるため、さほど影響が出ないと判断
-    if len(np_ball_pos) == len(ball_pre):
-        
-        #要素が空のとき
-        if len(np_ball_pos) == 0:
-            print("null")
-            continue
-        
-        #水路を流れるペットボトルは離散的なことから、配列の先頭と対応する検出物体の速度を評価する
-        ##流すペットボトルの数によるが、基本的にはカメラの視野内に存在する検出物体の数が一つになることを想定
-        
-        #差分量を計算
-        x_abs_diff = abs(np_ball_pos[0][0] - ball_pre[0][0])
-        y_abs_diff = abs(np_ball_pos[0][1] - ball_pre[0][1])
-        
-        
-        #####################################################################
-        #差分量が大きすぎる場合、フレーム間での検出物体の対応付けができていないものと判断する
-        #上記のparamsの、threshold_pxlで指定している
-        if (x_abs_diff > threshold_pxl) or (y_abs_diff > threshold_pxl):
-            print("対応付失敗")
-            continue
-        #####################################################################
-        
-        #画像内での移動量と現実の移動量との対応関係
-        x_real_diff = round(x_abs_diff)
-        y_real_diff = round(y_abs_diff)
-        #2乗
-        cal = x_real_diff**2 + y_real_diff**2
-        
-        #√abs*fps
-        velocity = (round(np.sqrt(cal)))
-
-        #画像での移動量を積分時間で割った値。要するに画像上での移動量のベクトル
-        diff = np_ball_pos -ball_pre
-        vector = diff/fps_t
-        #print("\n"+"vector"+"\n"+str(vector))
-       
-        
-    else:
-        vector = []
-        print("error")
-    
-    ####################################################################
-    #write vector_info on the livevideo
-    position1 = (50,50)
-    cv2.putText(frame, str(vector), position1, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), thickness=3)
-        
-        
-    #write boll_position
-    position2 = (50,100)
-    cv2.putText(frame, str(ball_pos), position2, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), thickness=3)
-
-    #現在と直前フレームの重心を書き込む
-    #直前フレームの重心を書き込む
-    for number in range(len(ball_pre)): #青色
-        cv2.circle(frame, tuple(ball_pre[number]), 1, (255, 0, 0), thickness = 10)
-    
-    #重心座標を書き込む
-    for number in range(len(np_ball_pos)): #赤
-        cv2.circle(frame, tuple(np_ball_pos[number]), 1, (0, 0, 255), thickness = 10)
-    
-    #検出した物体の数が一致すれば重心同士の対応を線分で可視化
-    if len(ball_pre) == len(np_ball_pos):
-        for detect_id in range(len(np_ball_pos)):
-            #現在と3フレーム前の座標をそれぞれ結び、検出物体の紐付けを行う
-            cv2.line(frame, tuple(ball_pre[detect_id]), tuple(np_ball_pos[detect_id]), (0, 255, 0), 10)
-    
-    
-    #update ball_position
-    ball_pre = np_ball_pos
-    
-    #リストの要素をclear()する
-    areas.clear()
-    ball_pos.clear()
-    
-"""
-####################################################
-    
-    
-    
-    
-    #加工なし画像を表示する
-    #cv2.imshow('Moment Frame', frame)
-    
-    
-    
-"""
-    #あとで各フレームを保存するコードを追加する
-    
-    #velocityをtexifileに書き込む
-    #textfile作成
-    if velocity != 0:
-        #テキストファイルに時系列データを保存(時系列を特定できるようにしてもよい)
-        f1 = open("/home/pi/Downloads/vector_info_log.txt","a")
-        f1.write(str(velocity)+'\n')
-        f1.close()
-        #最新の値をテキストファイルに上書き保存
-        f2 = open("/home/pi/Downloads/vector_info_.txt","w")
-        f2.write(str(velocity))
-        f2.close()
-   
-    else:
-    #テキストファイルに時系列データを保存(時系列を特定できるようにしてもよい)
-        f1 = open("/home/pi/Downloads/vector_info_log.txt","a")
-        f1.write("-1" + '\n')
-        f1.close()
-        #最新の値をテキストファイルに上書き保存
-        f2 = open("/home/pi/Downloads/vector_info_.txt","w")
-        f2.write(str(velocity))
-        f2.close()
-"""
-"""
-    #キー入力を1ms待って、k がpだったらBreakする
-    k = cv2.waitKey(1)&0xff # キー入力を待つ
-
-    if k == ord('p'):
-        break
-
-# キャプチャをリリースして、ウィンドウをすべて閉じる
-cap.release()
-cv2.destroyAllWindows()
-print("終了")
-"""
