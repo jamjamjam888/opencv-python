@@ -123,7 +123,12 @@ np_ball_pos = np.array([])
 areas = []
 #検出した物体の重心を格納するためのリスト
 ball_pos = []
- 
+
+#算出したvector
+vector = []
+
+#直前のフレームの中心座標を格納するためのリスト
+pre_vector_info = None
 #計算して求めた流速の値。
 velocity = None
 
@@ -140,7 +145,7 @@ while (True):
     #現在の日時を取得
     #now.secondで秒、now.microsecondでミリ秒を取得する
     now = datetime.now()
-    timestamp = [str(now.minute) + "分" + str(now.second) + "秒" + str(now.microsecond) + "ミリ秒"]
+    timestamp = str(now.minute) + "分" + str(now.second) + "秒" + str(now.microsecond) + "ミリ秒"
 
     #出力1:差分でどのように物体が検出されるか確認する
     gray1 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -235,42 +240,58 @@ while (True):
         
     #検出した物体が存在する場合
     else:
+        
         #検出した物体にそれぞれidを与え、その座標とその時のframe_numを渡してテキストファイルに書き込む
         for iter in range(len(ball_pos)):
             #格納されている重心座標を順番に取り出し、id,x,y,frameを渡す
             moment_information.append([id, ball_pos[iter], frame_num, timestamp])
+            
+            if pre_vector_info != None:
+                #list型のpre_vector_infoを参照して各検出物体の移動量を算出
+                ##参照
+                for length in range(len(pre_vector_info)):
+                    print(pre_vector_info[length][1])
+                    
+                    #ソートかなんか使って最短距離を出す
+            
+            
             #移動量を書き込むテキストファイルを生成し日付を書き込む
             f = open("/home/pi/Desktop/vector_info_log.txt","a")
-            f.write(str(moment_information)+'\n')
+            f.write(str(moment_information[iter])+'\n')
             f.close()
             
-            #直前のフレーム保管用ファイルを参照して移動量を算出する
-            f = open("/home/pi/Desktop/pre_vector_info_log.txt","a")
-            f.write(str(moment_information)+'\n')
-            f.close()
             
             #id更新
             id += 1
-            
-            #毎回リストの中身をクリアする
-            moment_information.clear()
         
             #重心座標を書き込む
             cv2.circle(frame, tuple(ball_pos[iter]), 1, (0, 0, 255), thickness = 10)
-            
-    #pre_vector_infoに重心座標の情報を書き込む
-    print("check")
-    print(moment_information)
-    f = open("/home/pi/Desktop/pre_vector_info_log.txt","a")
-    f.write(str(moment_information)+'\n')
-    f.close()
-    
+        
+        #
+        pre_vector_info = moment_information
+        #直前の中心座標格納ファイルを更新
+        ##テキストファイルの中身をいったんクリア
+        f = open("/home/pi/Desktop/pre_vector_info_log.txt","w")
+        #時間も格納してもいいかも
+        f.write("")
+        f.close
+        ###順番に格納していく
+        for loop in range(len(ball_pos)):
+            f = open("/home/pi/Desktop/pre_vector_info_log.txt","a")
+            f.write(str(pre_vector_info[loop])+'\n')
+            f.close()
+        
+
     cv2.imshow('Moment Frame', frame)
     
     #リストの中身を消去
     ball_pos.clear()
         
-            
+    
+    #毎回リストの中身をクリアする
+    moment_information.clear()
+        
+        
     #キー入力を1ms待って、k がpだったらBreakする
     k = cv2.waitKey(1)&0xff # キー入力を待つ
 
