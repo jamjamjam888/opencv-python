@@ -246,13 +246,35 @@ while (True):
             #格納されている重心座標を順番に取り出し、id,x,y,frameを渡す
             moment_information.append([id, ball_pos[iter], frame_num, timestamp])
             
+            #pre_vector_infoがNoneじゃないか判定
             if pre_vector_info != None:
+                #Noneじゃない場合
                 #list型のpre_vector_infoを参照して各検出物体の移動量を算出
-                ##参照
+                ##参照してball_pre[iter]と比較いく
                 for length in range(len(pre_vector_info)):
-                    print(pre_vector_info[length][1])
                     
-                    #ソートかなんか使って最短距離を出す
+                    #拘束条件①:流速が左から右に流れているのでx座標はつねに単調増加
+                    #拘束条件②:最近傍を更新していく
+                    
+                    #流速が左から右に流れているので、直前のフレームの中心座標よりx座標が小さいものはすべてはじく
+                    if pre_vector_info[length][1] > ball_pos[iter]:
+                        print("拘束条件①")
+                    
+                    #最短距離を計算して、もしより近傍が見つかれば更新する
+                    else:
+                        #vectorに差分を算出して格納していく
+                        ##
+                        print(ball_pos[iter])
+                        print(pre_vector_info[length][1])
+                        
+                        #差分を計算
+                        vector.append([(ball_pos[iter][0] - pre_vector_info[length][1][0]), (ball_pos[iter][1] - pre_vector_info[length][1][1])])
+                        
+                        #どうやって更新する?
+                        
+                        ##更新する？
+                        print(vector)
+            
             
             
             #移動量を書き込むテキストファイルを生成し日付を書き込む
@@ -267,7 +289,7 @@ while (True):
             #重心座標を書き込む
             cv2.circle(frame, tuple(ball_pos[iter]), 1, (0, 0, 255), thickness = 10)
         
-        #
+        #pre_vector_infoに重心座標を格納する
         pre_vector_info = moment_information
         #直前の中心座標格納ファイルを更新
         ##テキストファイルの中身をいったんクリア
@@ -286,7 +308,7 @@ while (True):
     
     #リストの中身を消去
     ball_pos.clear()
-        
+    vector.clear()
     
     #毎回リストの中身をクリアする
     moment_information.clear()
