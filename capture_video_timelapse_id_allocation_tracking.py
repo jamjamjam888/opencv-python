@@ -123,9 +123,16 @@ np_ball_pos = np.array([])
 areas = []
 #検出した物体の重心を格納するためのリスト
 ball_pos = []
+#検出した物体の直前のフレームにおける重心座標
+pre_ball_pos = []
 
 #算出したvector
+vector_diff = []
+
+
+#多分使うidの紐付けリスト
 vector = []
+
 
 #直前のフレームの中心座標を格納するためのリスト
 pre_vector_info = None
@@ -195,9 +202,16 @@ while (True):
     #各検出物体の輪郭を構成するすべての点をnとすると、重心x座標はすべてのx座標を足し合わせ、最後にnで割れば平均となるので計算できる。
     
     detect_numbers = len(areas) #検出した物体の数
+    
+    
+    
+    #####################################################
     if detect_numbers > 10: #検出した物体の数が異常に多い場合、カメラが動いた等の問題が発生していると考える
         print("too much detect!")
         break
+    #####################################################
+    
+    
     
     for detect_id in range(detect_numbers): #各検出物体の重心を計算
         
@@ -242,41 +256,11 @@ while (True):
     else:
         
         #検出した物体にそれぞれidを与え、その座標とその時のframe_numを渡してテキストファイルに書き込む
+        #一旦格納してあとから再度読み出す
         for iter in range(len(ball_pos)):
             #格納されている重心座標を順番に取り出し、id,x,y,frameを渡す
             moment_information.append([id, ball_pos[iter], frame_num, timestamp])
-            
-            #pre_vector_infoがNoneじゃないか判定
-            if pre_vector_info != None:
-                #Noneじゃない場合
-                #list型のpre_vector_infoを参照して各検出物体の移動量を算出
-                ##参照してball_pre[iter]と比較いく
-                for length in range(len(pre_vector_info)):
-                    
-                    #拘束条件①:流速が左から右に流れているのでx座標はつねに単調増加
-                    #拘束条件②:最近傍を更新していく
-                    
-                    #流速が左から右に流れているので、直前のフレームの中心座標よりx座標が小さいものはすべてはじく
-                    if pre_vector_info[length][1] > ball_pos[iter]:
-                        print("拘束条件①")
-                    
-                    #最短距離を計算して、もしより近傍が見つかれば更新する
-                    else:
-                        #vectorに差分を算出して格納していく
-                        ##
-                        print(ball_pos[iter])
-                        print(pre_vector_info[length][1])
-                        
-                        #差分を計算
-                        vector.append([(ball_pos[iter][0] - pre_vector_info[length][1][0]), (ball_pos[iter][1] - pre_vector_info[length][1][1])])
-                        
-                        #どうやって更新する?
-                        
-                        ##更新する？
-                        print(vector)
-            
-            
-            
+          
             #移動量を書き込むテキストファイルを生成し日付を書き込む
             f = open("/home/pi/Desktop/vector_info_log.txt","a")
             f.write(str(moment_information[iter])+'\n')
@@ -288,9 +272,79 @@ while (True):
         
             #重心座標を書き込む
             cv2.circle(frame, tuple(ball_pos[iter]), 1, (0, 0, 255), thickness = 10)
-        
+          
+          
+        #pre_vector_infoがNoneじゃないか判定
+        if pre_vector_info != None:
+                
+            #Noneじゃない場合
+            #list型のpre_vector_infoを参照して各検出物体の移動量を算出
+            ##参照してball_pre[iter]と比較していく
+            for iter in range(len(ball_pos)):
+                #ループして
+                #O(N^2)でいいのか?N数は10点以下にしているのでとりあえず問題ないとする
+                
+                for length in range(len(pre_vector_info)):
+                    
+                    #拘束条件①:流速が左から右に流れているのでx座標はつねに単調増加
+                    #拘束条件②:最近傍を更新していく
+                    
+                    #拘束条件①
+                    #流速が左から右に流れているので、直前のフレームの中心座標よりx座標が小さいものはすべてはじく
+                    """
+                    print("確認")
+                    print(pre_vector_info)
+                    print(ball_pos)
+                    """
+                    #pre_vector_infoに格納された各座標のx座標を見ていく
+                    #現在の重心が、直前のフレームの重心のx座標より小さければ拘束条件を満たさない
+                    if ball_pos[iter][0] - pre_vector_info[length][0] < 0:
+                        print("拘束条件①")
+                    
+                    #拘束条件②
+                    #最短距離を計算して、もしより近傍が見つかれば更新する
+                    else:
+                        #vectorに差分を算出して格納していく
+                        ##
+                        #print(ball_pos[iter])
+                        #print(pre_vector_info[length][1])
+                        
+                        #vector(差分)を計算
+                        vector_diff.append([(ball_pos[iter][0] - pre_vector_info[length][1][0]), (ball_pos[iter][1] - pre_vector_info[length][1][1])])
+                        
+                        #どうやって更新する?
+                        #総当りで最近傍を更新していく
+                        #現在の重心(ball_pos)1点に対して、直前のフレーム(pre_vector_info)の重心の全点を参照して、より近傍のものに更新していく。参照し終わると、現在のフレーム(ball_pos)の次の重心へ移行する
+                
+                
+                #フレーム間でidを動的に割り当てる
+                
+                
+                print("pre_ball_pos")
+                print(pre_ball_pos)
+                
+                print("ball_pos")
+                print(ball_pos)
+
+                print("vector_diff")
+                print(vector_diff)
+                #次の重心に移行するたびにvector_diffの中身をクリアする
+                #一番最後に最もabsが小さいものを選択する？
+                vector_diff.clear()
+                
+            
+        else:
+            print("pre_vector_infoが存在しません。")
+
+
         #pre_vector_infoに重心座標を格納する
         pre_vector_info = moment_information
+        
+        #pre_ball_posを更新
+        pre_ball_pos = ball_pos
+        
+        
+        
         #直前の中心座標格納ファイルを更新
         ##テキストファイルの中身をいったんクリア
         f = open("/home/pi/Desktop/pre_vector_info_log.txt","w")
