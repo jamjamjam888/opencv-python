@@ -104,7 +104,9 @@ f = open("/home/pi/Desktop/vector_info_log.txt","w")
 f.write(str(date)+'\n')
 f.close()
 
-
+f = open("/home/pi/Desktop/frame_info_log.txt","w")
+f.write(str(date)+'\n')
+f.close()
 #背景差分による流速計測
 #captureクラスの呼び出し
 cap = cv2.VideoCapture(0)
@@ -295,18 +297,6 @@ while (True):
         
             #重心座標を書き込む
             cv2.circle(frame, tuple(ball_pos[iter]), 1, (0, 0, 255), thickness = 10)
-          
-          
-          
-          
-          
-          
-          
-        
-        
-        
-        
-        
         
         ##################################################################################################################################################################
         ##################################################################################################################################################################
@@ -368,7 +358,22 @@ while (True):
                             #よって検出する物体は最大でも5つとして、常にテキストファイルの下から5行だけを読み出すことにする
                             
                             #読み出し
+                            f = open("/home/pi/Desktop/frame_info_log.txt","r")
+                            #読み出しが5行以下のとき
+                            if:
                             
+                            #読み出しが5行以上のとき
+                            else:
+                                for line in range(5):
+                                    readline = f.readlines()[-line]
+                                    
+                                    if id = readline[0]:
+                                        readline[0] = id
+                                        readline[2] = post_vector_information[iter][3]
+                                        readline[4] = post_vector_information[iter][1]
+                                        
+                            
+                            f.close()
                             #idを更新・保存する
                     
                     
