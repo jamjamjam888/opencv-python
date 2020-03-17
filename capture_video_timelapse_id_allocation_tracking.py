@@ -138,7 +138,6 @@ pre_ball_pos = []
 #算出したvector
 vector_diff = []
 
-
 #多分使うidの紐付けリスト
 vector = []
 
@@ -147,6 +146,11 @@ vector = []
 pre_vector_info = None
 #計算して求めた流速の値。
 velocity = None
+
+#移動量の絶対値の和を評価する。
+abs_function = 0
+#更新変数
+new_abs_function = 0
 
 #loopの最後にclearするコードを書く
 
@@ -340,13 +344,37 @@ while (True):
                     #pre_vector_infoに格納された各座標のx座標を見ていく
                     #現在の重心が、直前のフレームの重心のx座標より小さければ拘束条件を満たさない
                     
-                    #readlinesで読み出していってもいいかも。というかそっちのが楽そう
+                    #拘束条件①
+                    #post_frameに対して直前に重心が存在するか?
+                    #存在する場合
+                    if post_vector_information[iter][1][0] - pre_ball_information[length][1][0] > 0:
+                        
+                        print("拘束条件①は真")
+                        #最近傍かどうかの判定へ
                     
-                    if post_vector_information[iter][1][0] - pre_ball_information[length][1][0] < 0:
-                        print("拘束条件①")
+                        #拘束条件②
+                        #最短距離を計算して、もしより近傍が見つかれば更新する
+                        #2乗の和で計算
+                        #new_abs_function = x_diff^2 + y_diff^2
+                        new_abs_function = (post_vector_information[iter][1][0] - pre_ball_information[length][1][0])^2 + (post_vector_information[iter][1][1] - pre_ball_information[length][1][1])^2
+                        
+                        #abs_functionが空or新しい最近傍が見つかった場合
+                        if (abs_function = 0) or (new_abs_function < abs_function):
+                            #最近傍を更新
+                            abs_function = new_abs_function
+                            #readlineしてテキストファイルに格納されているものを読み出しidを参照・更新する
+                            #テキストファイルの型:[id,視野に入ってきた時間,最後に検出したときの時間,はじめの重心座標,最後の重心座標]
+                            #時間経過が長すぎると、読み出し時間が単調増加する。
+                            #よって検出する物体は最大でも5つとして、常にテキストファイルの下から5行だけを読み出すことにする
+                            
+                            #読み出し
+                            
+                            #idを更新・保存する
                     
-                    #拘束条件②
-                    #最短距離を計算して、もしより近傍が見つかれば更新する
+                    
+                    #拘束条件①    
+                    #存在しなかった場合
+                    #新しい検出物体    
                     else:
                         #vectorに差分を算出して格納していく
                         ##
