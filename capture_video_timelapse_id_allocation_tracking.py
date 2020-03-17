@@ -22,7 +22,7 @@ from datetime import datetime
 #params
 
 #fps設定
-fps = 1
+fps = 2
 
 #カメラ視野設定
 height = 480
@@ -30,15 +30,22 @@ width = 640
 
 #重心座標を中心とした視野設定
 threshold_pxl = 200
-
 #dynamic range:200*8/3=120mm/s
+
+#diff_threshold
+#背景差分をとるのしきい値。0~255で数値が低いほど簡単に差分を検出する。逆に数値が高いほど変化に強い。
+diff_threshold = 130
+
+#検出する点数のしきい値。しきい値=同時に検出できる物体数に最大値と考えてよい
+threshold_points =20
+
 
 #積分時間(integration_time)設定
 frame_integration = 3
 fps_t = fps*frame_integration
 
 #差分ではじくノイズのしきい値。差分で検出した面積が一定値以下のものをはじくようにする。検出する物体サイズにもとづいてパラメータチューニングを行う・
-area_size = 500
+area_size = 1000
 
 #detect_id
 id = 0
@@ -159,7 +166,7 @@ while (True):
     #差分検出
     color_diff_ini = cv2.absdiff(gray1, gray_background)
     #閾値処理
-    retval, black_diff = cv2.threshold(color_diff_ini, 80, 255, cv2.THRESH_BINARY)
+    retval, black_diff = cv2.threshold(color_diff_ini, diff_threshold, 255, cv2.THRESH_BINARY)
     
     #ノイズ除去
     #operator
@@ -206,7 +213,7 @@ while (True):
     
     
     #####################################################
-    if detect_numbers > 10: #検出した物体の数が異常に多い場合、カメラが動いた等の問題が発生していると考える
+    if detect_numbers > threshold_points: #検出した物体の数が異常に多い場合、カメラが動いた等の問題が発生していると考える
         print("too much detect!")
         break
     #####################################################
@@ -255,6 +262,12 @@ while (True):
     #検出した物体が存在する場合
     else:
         
+        ##テキストファイルの中身をいったんクリア
+        f = open("/home/pi/Desktop/moment_info_log.txt","w")
+        #時間も格納してもいいかも
+        f.write("")
+        f.close
+        
         #検出した物体にそれぞれidを与え、その座標とその時のframe_numを渡してテキストファイルに書き込む
         #一旦格納してあとから再度読み出す
         for iter in range(len(ball_pos)):
@@ -266,6 +279,10 @@ while (True):
             f.write(str(moment_information[iter])+'\n')
             f.close()
             
+            #今取得した情報を格納
+            f = open("/home/pi/Desktop/moment_info_log.txt","a")
+            f.write(str(moment_information[iter])+'\n')
+            f.close()
             
             #id更新
             id += 1
@@ -298,7 +315,10 @@ while (True):
                     """
                     #pre_vector_infoに格納された各座標のx座標を見ていく
                     #現在の重心が、直前のフレームの重心のx座標より小さければ拘束条件を満たさない
-                    if ball_pos[iter][0] - pre_vector_info[length][0] < 0:
+                    
+                    #readlinesで読み出していってもいいかも。というかそっちのが楽そう
+                    
+                    if ball_pos[iter][0] - pre_ball_pos[length][0] < 0:
                         print("拘束条件①")
                     
                     #拘束条件②
@@ -310,7 +330,7 @@ while (True):
                         #print(pre_vector_info[length][1])
                         
                         #vector(差分)を計算
-                        vector_diff.append([(ball_pos[iter][0] - pre_vector_info[length][1][0]), (ball_pos[iter][1] - pre_vector_info[length][1][1])])
+                        vector_diff.append([(ball_pos[iter][0] - pre_ball_pos[length][0]), (ball_pos[iter][1] - pre_ball_pos[length][1])])
                         
                         #どうやって更新する?
                         #総当りで最近傍を更新していく
@@ -318,7 +338,7 @@ while (True):
                 
                 
                 #フレーム間でidを動的に割り当てる
-                
+                #moment_infoから参照する？
                 
                 print("pre_ball_pos")
                 print(pre_ball_pos)
@@ -336,7 +356,10 @@ while (True):
                 #今回はL1ノルムで評価
                 #numpyのnp.liunalg.norm()を使用
                 
+                #pre_ball_posを描画
+                cv2.circle(frame, tuple(pre_ball_pos[iter]), 1, (0, 0, 255), thickness = 10)
                 
+                #紐付けを描画
                 
                 #次の重心に移行するたびにvector_diffの中身をクリアする
                 #一番最後に最もabsが小さいものを選択する？
@@ -350,8 +373,13 @@ while (True):
         #pre_vector_infoに重心座標を格納する
         pre_vector_info = moment_information
         
+        
+        
+        #######################
         #pre_ball_posを更新
         pre_ball_pos = ball_pos
+        #######################
+        
         
         
         
@@ -366,7 +394,8 @@ while (True):
             f = open("/home/pi/Desktop/pre_vector_info_log.txt","a")
             f.write(str(pre_vector_info[loop])+'\n')
             f.close()
-        
+    
+    #どれとどれを紐づけしたか見えるようにしたい
 
     cv2.imshow('Moment Frame', frame)
     
@@ -376,7 +405,6 @@ while (True):
     
     #毎回リストの中身をクリアする
     moment_information.clear()
-        
         
     #キー入力を1ms待って、k がpだったらBreakする
     k = cv2.waitKey(1)&0xff # キー入力を待つ
