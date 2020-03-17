@@ -55,8 +55,8 @@ id = 0
 #frame_num
 frame_num = 0
 
-#moment_informationリスト
-moment_information = []
+#post_vector_infoリスト
+post_vector_info = []
 
 ###################
 #膨張処理・収縮処理回数
@@ -246,20 +246,20 @@ while (True):
     #検出した物体が存在しない場合
     if len(ball_pos) == 0:
         
-        #moment_informationにframe番号のみを渡す
-        moment_information.append([None, None, None, frame_num, timestamp])
+        #post_vector_infoにframe番号のみを渡す
+        post_vector_info.append([None, None, None, frame_num, timestamp])
         #テキストファイルに書き込む
         #移動量を書き込むテキストファイルを生成し日付を書き込む
         f = open("/home/pi/Desktop/vector_info_log.txt","a")
-        f.write(str(moment_information)+'\n')
+        f.write(str(post_vector_info)+'\n')
         f.close()
         
         #t直前のフレーム保管用ファイル
         f = open("/home/pi/Desktop/vector_info_log.txt","a")
-        f.write(str(moment_information)+'\n')
+        f.write(str(post_vector_info)+'\n')
         f.close()
         
-        moment_information.clear()
+        post_vector_info.clear()
         
     #検出した物体が存在する場合
     else:
@@ -274,16 +274,16 @@ while (True):
         #一旦格納してあとから再度読み出す
         for iter in range(len(ball_pos)):
             #格納されている重心座標を順番に取り出し、id,x,y,frameを渡す
-            moment_information.append([id, ball_pos[iter], frame_num, timestamp])
+            post_vector_info.append([id, ball_pos[iter], frame_num, timestamp])
           
             #移動量を書き込むテキストファイルを生成し日付を書き込む
             f = open("/home/pi/Desktop/vector_info_log.txt","a")
-            f.write(str(moment_information[iter])+'\n')
+            f.write(str(post_vector_info[iter])+'\n')
             f.close()
             
             #今取得した情報を格納
             f = open("/home/pi/Desktop/moment_info_log.txt","a")
-            f.write(str(moment_information[iter])+'\n')
+            f.write(str(post_vector_info[iter])+'\n')
             f.close()
             
             #id更新
@@ -313,7 +313,7 @@ while (True):
         
         
         
-        #moment_informationとpre_vector_infoで比較。更新を行う
+        #post_vector_infoとpre_vector_infoで比較。更新を行う
         
         #pre_vector_infoがNoneじゃないか判定
         if pre_vector_info != None:
@@ -321,7 +321,7 @@ while (True):
             #Noneじゃない場合
             #list型のpre_vector_infoを参照して各検出物体の移動量を算出
             ##参照してball_pre[iter]と比較していく
-            for iter in range(len(moment_information)):
+            for iter in range(len(post_vector_info)):
                 #ループ
                 #O(N^2)でいいのか?N数は10点以下にしているのでとりあえず問題ないとする
                 
@@ -342,7 +342,7 @@ while (True):
                     
                     #readlinesで読み出していってもいいかも。というかそっちのが楽そう
                     
-                    if moment_information[iter][1][0] - pre_ball_information[length][1][0] < 0:
+                    if post_vector_information[iter][1][0] - pre_ball_information[length][1][0] < 0:
                         print("拘束条件①")
                     
                     #拘束条件②
@@ -354,7 +354,7 @@ while (True):
                         #print(pre_vector_info[length][1])
                         
                         #vector(差分)を計算
-                        vector_diff.append([moment_information[iter][1][0] - pre_ball_information[length][1][0]), (moment_information[iter][1][1] - pre_ball_information[length][1][1])])
+                        vector_diff.append([post_vector_info[iter][1][0] - pre_ball_information[length][1][0]), (post_vector_info[iter][1][1] - pre_ball_information[length][1][1])])
                         
                         #vectorというリストに格納されている値をそれぞれ2乗して最小のものが
                         
@@ -401,7 +401,7 @@ while (True):
 
 
         #pre_vector_infoに重心座標を格納する
-        pre_vector_info = moment_information
+        pre_vector_info = post_vector_info
         
         
         
@@ -434,7 +434,7 @@ while (True):
     vector.clear()
     
     #毎回リストの中身をクリアする
-    moment_information.clear()
+    post_vector_info.clear()
         
     #キー入力を1ms待って、k がpだったらBreakする
     k = cv2.waitKey(500)&0xff # キー入力を待つ
