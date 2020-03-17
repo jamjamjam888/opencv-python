@@ -22,6 +22,8 @@ from datetime import datetime
 #params
 
 #fps設定
+#fps = 1にすると背景差分がうまくいかなくなるので注意。
+#また、fps = 2にしてキーボード入力の待機時間を0.5sにして無理やりfps=1と同等の動きにすることもできないので注意。
 fps = 2
 
 #カメラ視野設定
@@ -183,7 +185,7 @@ while (True):
 
     #出力2:こっちで重心や矩形を書き込む
     
-    #重心を計算していく
+    #重心を計算していpく
     
     #①差分により検出した物体のうち、その領域面積が小さいものは光の反射のよるノイズとしてはじく
     contours, hierarchy = cv2.findContours(black_diff, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -291,34 +293,56 @@ while (True):
             cv2.circle(frame, tuple(ball_pos[iter]), 1, (0, 0, 255), thickness = 10)
           
           
+          
+          
+          
+          
+          
+        
+        
+        
+        
+        
+        
+        ##################################################################################################################################################################
+        ##################################################################################################################################################################
+        
+        
+        
+        #ここから
+        
+        
+        
+        #moment_informationとpre_vector_infoで比較。更新を行う
+        
         #pre_vector_infoがNoneじゃないか判定
         if pre_vector_info != None:
                 
             #Noneじゃない場合
             #list型のpre_vector_infoを参照して各検出物体の移動量を算出
             ##参照してball_pre[iter]と比較していく
-            for iter in range(len(ball_pos)):
-                #ループして
+            for iter in range(len(moment_information)):
+                #ループ
                 #O(N^2)でいいのか?N数は10点以下にしているのでとりあえず問題ないとする
                 
                 for length in range(len(pre_vector_info)):
                     
-                    #拘束条件①:流速が左から右に流れているのでx座標はつねに単調増加
-                    #拘束条件②:最近傍を更新していく
+                    #制約条件①:流速が左から右に流れているのでx座標はつねに単調増加
+                    #制約条件②:最近傍を更新していく
+                    #制約条件③:
+                    
+                    #補助的な制約条件
+                    #制約条件④:一回の移動でthreshold_pxl以上移動した場合もはじく
+                    #threshold_pxl
                     
                     #拘束条件①
                     #流速が左から右に流れているので、直前のフレームの中心座標よりx座標が小さいものはすべてはじく
-                    """
-                    print("確認")
-                    print(pre_vector_info)
-                    print(ball_pos)
-                    """
                     #pre_vector_infoに格納された各座標のx座標を見ていく
                     #現在の重心が、直前のフレームの重心のx座標より小さければ拘束条件を満たさない
                     
                     #readlinesで読み出していってもいいかも。というかそっちのが楽そう
                     
-                    if ball_pos[iter][0] - pre_ball_pos[length][0] < 0:
+                    if moment_information[iter][1][0] - pre_ball_information[length][1][0] < 0:
                         print("拘束条件①")
                     
                     #拘束条件②
@@ -330,7 +354,13 @@ while (True):
                         #print(pre_vector_info[length][1])
                         
                         #vector(差分)を計算
-                        vector_diff.append([(ball_pos[iter][0] - pre_ball_pos[length][0]), (ball_pos[iter][1] - pre_ball_pos[length][1])])
+                        vector_diff.append([moment_information[iter][1][0] - pre_ball_information[length][1][0]), (moment_information[iter][1][1] - pre_ball_information[length][1][1])])
+                        
+                        #vectorというリストに格納されている値をそれぞれ2乗して最小のものが
+                        
+                        #vectorというリストで更新していく
+                        #vectorがNone、もしくは新たなvectorの計算結果が今のものより小さい場合更新していく。そして
+                        
                         
                         #どうやって更新する?
                         #総当りで最近傍を更新していく
@@ -357,7 +387,7 @@ while (True):
                 #numpyのnp.liunalg.norm()を使用
                 
                 #pre_ball_posを描画
-                cv2.circle(frame, tuple(pre_ball_pos[iter]), 1, (0, 0, 255), thickness = 10)
+                #cv2.circle(frame, tuple(pre_ball_pos[iter]), 1, (0, 0, 255), thickness = 10)
                 
                 #紐付けを描画
                 
@@ -407,7 +437,7 @@ while (True):
     moment_information.clear()
         
     #キー入力を1ms待って、k がpだったらBreakする
-    k = cv2.waitKey(1)&0xff # キー入力を待つ
+    k = cv2.waitKey(500)&0xff # キー入力を待つ
 
     if k == ord('p'):
         break
