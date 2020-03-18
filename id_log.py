@@ -253,7 +253,7 @@ while (True):
     if len(ball_pos) == 0:
         
         #post_vector_infoにframe番号のみを渡す
-        post_vector_info.append([None, None, None, frame_num, timestamp])
+        post_vector_info.append([None, None, frame_num, timestamp])
         #テキストファイルに書き込む
         #移動量を書き込むテキストファイルを生成し日付を書き込む
         f = open("/home/pi/Desktop/vector_info_log.txt","a")
