@@ -1,4 +1,4 @@
-# info
+## parameter_info
 
 カメラのpxl:```480*640pxl```
 
@@ -7,6 +7,8 @@
 
 膨張処理・収縮処理回数(デノイジング)
 ```noize_iters = 3```
+
+## text_info
 
 書き込み情報
 ```[id, [x,y], frame_number, timestamp]```
