@@ -48,4 +48,12 @@
 厳密にはペットボトルの追い越しが発生すると上記の拘束条件は機能しない。
 ただし今回は測定対象が水流というベルトコンベアに乗って一様に移動することから、そのようなケースは発生しないこととした。
 
+## directory　tree
+```
+README.md
+|-capture_video # 画像解析ファイル
+|-issue         # 参考情報
+|-txt_data      # 書き込んだ解析データの例
+```
+
 capture_video_timelapse_id_allocation_tracking.pyファイルが最終的なソースコード。
