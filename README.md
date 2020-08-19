@@ -51,9 +51,9 @@
 ## directory　tree
 ```
 README.md
-|-capture_video # 画像解析ファイル
-|-issue         # 参考情報
+|-capture_video # 画像解析ファイル管理フォルダ
+|-issue         # 解析参考情報
 |-txt_data      # 書き込んだ解析データの例
 ```
 
-capture_video_timelapse_id_allocation_tracking.pyファイルが最終的なソースコード。
+```capture_video_timelapse_id_allocation_tracking.py```ファイルが最終的なソースコード。
