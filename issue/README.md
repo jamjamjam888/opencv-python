@@ -8,5 +8,7 @@
 
 背景が暗いので, 同系統の物体は検出精度が悪い.
 
+(備考)パラメータを変えることで検出精度をある程度上げれる.
+
 ### 参考
 https://github.com/jamjamjam888/DOC-kaken/blob/master/issue/ref_image.pdf
