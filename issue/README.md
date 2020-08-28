@@ -14,4 +14,5 @@ gifを見てわかるように, 影や光の影響をかなり受けている.
 (備考)パラメータを変えることで検出精度をある程度上げたり、検出物体が小さすぎる場合は弾くことができる.
 
 ### 参考
-![https://github.com/jamjamjam888/DOC-kaken/blob/master/issue/ref_image.pdf]
+https://github.com/jamjamjam888/DOC-kaken/blob/master/issue/ref_image.pdf
+https://github.com/feynfeyn888/DOC-kaken/blob/master/issue/DOC-Diagram.png
